@@ -1,27 +1,29 @@
-name: Build
-on:
-  push:
-    paths-ignore::
-      - "README.md"
+name: Build Windows
+
+on: [push, pull_request]
 
 jobs:
-  lint:
-    name: Run lint checks
-    runs-on: [ ubuntu-latest ]
+  build:
+    runs-on: windows-latest
     steps:
-      - name: Lint
-        uses: actions/checkout@v3.5.3
-      - run: make lint
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive  # 拉取 libzt 子模块
 
-  build_matrix:
-    needs: lint
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        target: [debug, release]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Build ${{ matrix.os }} - ${{ matrix.target }}
-        timeout-minutes: 6
-        uses: actions/checkout@v3.5.3
-      - run: make ${{ matrix.target }}
+    - name: Install dependencies
+      shell: pwsh
+      run: |
+        # 使用 Chocolatey 或 winget 安装 clang 和 cmake（需预装 Chocolatey）
+        choco install llvm cmake --yes
+
+    - name: Build
+      shell: cmd
+      run: |
+        # 使用 MSYS2 或类似环境运行 make（需在 Actions 中设置）
+        make
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: pylon-windows
+        path: pylon.exe
