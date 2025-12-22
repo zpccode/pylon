@@ -1,27 +1,27 @@
-name: Build
-on:
-  push:
-    paths-ignore::
-      - "README.md"
+name: Build Linux
+
+on: [push, pull_request]
 
 jobs:
-  lint:
-    name: Run lint checks
-    runs-on: [ ubuntu-latest ]
+  build:
+    runs-on: ubuntu-latest
     steps:
-      - name: Lint
-        uses: actions/checkout@v3.5.3
-      - run: make lint
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive  # 自动拉取 libzt 子模块
 
-  build_matrix:
-    needs: lint
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        target: [debug, release]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Build ${{ matrix.os }} - ${{ matrix.target }}
-        timeout-minutes: 6
-        uses: actions/checkout@v3.5.3
-      - run: make ${{ matrix.target }}
+    - name: Install dependencies
+      run: |
+        apt update
+        apt install -y clang cmake make git
+
+    - name: Build
+      run: |
+        make  # 运行 Makefile，编译 libzt 并生成 pylon
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: pylon-linux
+        path: pylon  # 上传生成的 pylon 可执行文件
